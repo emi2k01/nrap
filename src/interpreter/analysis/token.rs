@@ -45,6 +45,8 @@ pub enum Kind {
     Asterisk,
     Caret,
     Modulo,
+    Or,
+    And,
     Equal,
     NotEqual,
     GreaterThan,
