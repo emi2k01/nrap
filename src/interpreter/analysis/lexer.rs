@@ -60,7 +60,7 @@ impl Lexer {
                 ',' => Comma,
                 ';' => Semicolon,
                 '>' => {
-                    if self.peek_char() == Some(&'=') {
+                    if self.peek_char() == Some('=') {
                         self.read_char();
                         GreaterThanEqual
                     } else {
@@ -68,7 +68,7 @@ impl Lexer {
                     }
                 }
                 '<' => {
-                    if self.peek_char() == Some(&'=') {
+                    if self.peek_char() == Some('=') {
                         self.read_char();
                         LessThanEqual
                     } else {
@@ -76,11 +76,27 @@ impl Lexer {
                     }
                 }
                 '!' => {
-                    if self.peek_char() == Some(&'=') {
+                    if self.peek_char() == Some('=') {
                         self.read_char();
                         NotEqual
                     } else {
                         Bang
+                    }
+                }
+                '&' => {
+                    if self.peek_char() == Some('&') {
+                        self.read_char();
+                        And
+                    } else {
+                        Illegal
+                    }
+                }
+                '|' => {
+                    if self.peek_char() == Some('|') {
+                        self.read_char();
+                        Or
+                    } else {
+                        Illegal
                     }
                 }
                 _ => {
@@ -243,8 +259,8 @@ impl Lexer {
         self.current_char = self.input.get(self.position).cloned();
     }
 
-    fn peek_char(&mut self) -> Option<&char> {
-        self.input.get(self.position + 1)
+    fn peek_char(&mut self) -> Option<char> {
+        self.input.get(self.position + 1).cloned()
     }
 }
 
