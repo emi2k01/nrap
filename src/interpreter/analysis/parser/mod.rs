@@ -31,7 +31,7 @@ impl Parser {
         parser.advance();
         parser
     }
-    
+
     pub fn parse(&mut self) -> AnalysisResult<Program> {
         let mut program: Program = vec![];
         while current_token_is!(self, EOF) {
@@ -41,7 +41,7 @@ impl Parser {
         }
         Ok(program)
     }
-    
+
     fn parse_procedure(&mut self) -> AnalysisResult<Statement> {
         expect_current_token!(self, Procedure)?;
 
@@ -52,7 +52,7 @@ impl Parser {
         self.advance();
 
         let block = self.parse_block()?;
-        
+
         Ok(Statement::Procedure(ProcedureStatement {
             ident,
             parameters,
