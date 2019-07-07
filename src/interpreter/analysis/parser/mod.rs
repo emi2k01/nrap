@@ -34,7 +34,7 @@ impl Parser {
 
     pub fn parse(&mut self) -> AnalysisResult<Program> {
         let mut program: Program = vec![];
-        while current_token_is!(self, EOF) {
+        while !current_token_is!(self, EOF) {
             let procedure = self.parse_procedure()?;
             program.push(procedure);
             self.advance();
@@ -69,7 +69,7 @@ impl Parser {
                 Kind::Ident(_) => {
                     if peek_token_is!(self, LParen) {
                         self.parse_call_statement()?
-                    } else if peek_token_is!(self, Equal) {
+                    } else if peek_token_is!(self, Equal) || peek_token_is!(self, LBracket) {
                         self.parse_assignment_statement()?
                     } else {
                         return Err(AnalysisError::Generic);
