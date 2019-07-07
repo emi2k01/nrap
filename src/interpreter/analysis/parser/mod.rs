@@ -194,7 +194,7 @@ impl Parser {
             self.advance();
             self.advance();
         }
-        expect_peek_token!(self, RParen);
+        expect_peek_token!(self, RParen)?;
         Ok(params)
     }
 
@@ -344,7 +344,7 @@ impl Parser {
     }
 
     fn parse_grouped_expr(&mut self) -> AnalysisResult<Expression> {
-        expect_current_token!(self, LParen);
+        expect_current_token!(self, LParen)?;
 
         let expr = self.parse_expr(Precedence::Lowest)?;
         expect_peek_token!(self, RParen)?;
