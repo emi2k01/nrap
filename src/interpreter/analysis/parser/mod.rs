@@ -185,6 +185,11 @@ impl Parser {
         expect_current_token!(self, LParen)?;
 
         let mut params: Vec<Parameter> = vec![];
+        
+        if current_token_is!(self, RParen) {
+            return Ok(params);
+        }
+        
         loop {
             let param = self.parse_parameter()?;
             params.push(param);
@@ -520,6 +525,16 @@ mod tests {
                 },
             },
         ];
+        assert_eq!(result, expected_result);
+    }
+    
+    #[test]
+    fn test_empty_parameters() {
+        let mut parser = Parser::new(Lexer::new("()"));
+        let result = parser
+            .parse_parameters()
+            .expect("Expected parameters but got a ParseError");
+        let expected_result = vec![];
         assert_eq!(result, expected_result);
     }
 
