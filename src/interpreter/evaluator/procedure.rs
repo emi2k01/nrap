@@ -4,7 +4,7 @@ use crate::interpreter::evaluator::object::Object;
 use std::fmt;
 use std::rc::Rc;
 
-pub type BuiltinFn = Rc<Fn(&[Object]) -> RuntimeResult<Object>>;
+pub type BuiltinFn = Rc<dyn Fn(&[Object]) -> RuntimeResult<Object>>;
 
 #[derive(Clone)]
 pub struct BuiltinProcedure {

@@ -1,10 +1,8 @@
 use std::collections::HashMap;
 
-use crate::interpreter::analysis::ast::ProcedureStatement;
 use crate::interpreter::evaluator::errors::{RuntimeError, RuntimeResult};
 use crate::interpreter::evaluator::object::Object;
 use crate::interpreter::evaluator::procedure::Procedure;
-use core::borrow::BorrowMut;
 
 pub struct Environment {
     stores: Vec<Vec<HashMap<String, Object>>>,
@@ -63,9 +61,9 @@ impl Environment {
     }
 
     pub fn set(&mut self, key: String, obj: Object) {
-        let mut rev_scopes = self.stores.last_mut().unwrap().iter_mut().rev();
+        let rev_scopes = self.stores.last_mut().unwrap().iter_mut().rev();
         for scope in rev_scopes {
-            if let Some(v) = scope.get(&key) {
+            if scope.get(&key).is_some() {
                 scope.insert(key, obj);
                 return;
             }
@@ -74,7 +72,7 @@ impl Environment {
     }
 
     pub fn get(&mut self, obj: &str) -> RuntimeResult<Object> {
-        let mut rev_scopes = self.stores.last().unwrap().iter().rev();
+        let rev_scopes = self.stores.last().unwrap().iter().rev();
         for scope in rev_scopes {
             if let Some(v) = scope.get(obj) {
                 return Ok(v.to_owned());

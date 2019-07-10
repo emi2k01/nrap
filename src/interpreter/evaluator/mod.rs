@@ -4,13 +4,12 @@ pub mod errors;
 mod object;
 mod procedure;
 
-use crate::interpreter::analysis::ast::Precedence::Call;
 use crate::interpreter::analysis::ast::*;
-use crate::interpreter::analysis::token::Kind::Out;
 use crate::interpreter::evaluator::errors::{RuntimeError, RuntimeResult};
 use crate::interpreter::evaluator::object::Object;
 use crate::interpreter::evaluator::procedure::Procedure;
 use environment::Environment;
+use std::io::Write;
 
 pub struct Evaluator {
     env: Environment,
@@ -28,12 +27,9 @@ impl Evaluator {
                 if proc.ident.value == "main" {
                     let result = self.eval_block_statement(&proc.block);
                     if let Err(err) = result {
-                        match err {
-                            RuntimeError::Generic(err) => {
-                                println!("\nPROGRAM ERROR: {}", err);
-                                std::process::exit(0);
-                            }
-                        }
+                        println!("{}", err);
+                        std::io::stdout().flush().unwrap();
+                        std::process::exit(0);
                     }
                     break;
                 }
@@ -49,9 +45,7 @@ impl Evaluator {
                     proc.ident.value.clone(),
                     Procedure::UserDefined(proc.clone()),
                 ),
-                _ => Err(RuntimeError::Generic(String::from(
-                    "Tried to use a non-procedure statement in the top level",
-                ))),
+                _ => Err(RuntimeError::NonProcedureInTopLevel),
             }?;
         }
         Ok(())
@@ -98,17 +92,12 @@ impl Evaluator {
             Object::Bool(boolean) => {
                 if boolean {
                     self.eval_block_statement(&if_statement.consequence)?
-                } else {
-                    if let Some(alternative) = &if_statement.alternative {
-                        self.eval_block_statement(alternative)?;
-                    }
+                } else if let Some(alternative) = &if_statement.alternative {
+                    self.eval_block_statement(alternative)?;
                 }
+                
             }
-            _ => {
-                return Err(RuntimeError::Generic(String::from(
-                    "Tried to use non-bool expression in if-statement",
-                )))
-            }
+            _ => return Err(RuntimeError::IfConditionNotABool),
         }
         Ok(())
     }
@@ -127,11 +116,7 @@ impl Evaluator {
                                     break 'loop_statement;
                                 }
                             }
-                            _ => {
-                                return Err(RuntimeError::Generic(String::from(
-                                    "Tried to use a non-bool expression in a break-if statement",
-                                )))
-                            }
+                            _ => return Err(RuntimeError::BreakIfConditionNotABool),
                         }
                     }
                     statement => self.eval_statement(statement)?,
@@ -150,7 +135,7 @@ impl Evaluator {
     }
 
     fn eval_expr(&mut self, expr: &Expression) -> RuntimeResult<Object> {
-        let result = match expr {
+        match expr {
             Expression::Ident(ident_expr) => self.eval_ident_expr(ident_expr),
             Expression::FloatLiteral(lit) => Ok(Object::Float(*lit)),
             Expression::StringLiteral(string) => Ok(Object::String(string.clone())),
@@ -159,9 +144,7 @@ impl Evaluator {
                 if let Some(out_value) = self.eval_call_expr(call_expr)? {
                     Ok(out_value)
                 } else {
-                    Err(RuntimeError::Generic(String::from(
-                        "Tried to use call expression with an invalid procedure",
-                    )))
+                    Err(RuntimeError::ProcedureCallExprNotValid)
                 }
             }
             Expression::Index(index_expr) => self.eval_index_expr(index_expr),
@@ -174,8 +157,7 @@ impl Evaluator {
                 let right = self.eval_expr(&*prefix.right)?;
                 self.eval_prefix_expr(prefix.kind, &right)
             }
-        };
-        result
+        }
     }
 
     fn eval_infix_expr(
@@ -185,30 +167,21 @@ impl Evaluator {
         right: &Object,
     ) -> RuntimeResult<Object> {
         // TODO: Handle string concatenation with non-string types (implicit conversion)
-        let result = match left {
+        match left {
             Object::Float(lv) => match right {
                 Object::Float(rv) => self.eval_infix_float_expr(kind, *lv, *rv),
-                _ => Err(RuntimeError::Generic(String::from(
-                    "Tried to apply infix to different types",
-                ))),
+                _ => Err(RuntimeError::InfixOpWithInvalidTypes),
             },
             Object::String(lv) => match right {
                 Object::String(rv) => self.eval_infix_string_expr(kind, lv, rv),
-                _ => Err(RuntimeError::Generic(String::from(
-                    "Tried to apply infix to different types",
-                ))),
+                _ => Err(RuntimeError::InfixOpWithInvalidTypes),
             },
             Object::Bool(lv) => match right {
                 Object::Bool(rv) => self.eval_infix_bool_expr(kind, *lv, *rv),
-                _ => Err(RuntimeError::Generic(String::from(
-                    "Tried to apply infix to different types",
-                ))),
+                _ => Err(RuntimeError::InfixOpWithInvalidTypes),
             },
-            _ => Err(RuntimeError::Generic(String::from(
-                "Tried to apply infix to different types",
-            ))),
-        };
-        result
+            _ => Err(RuntimeError::InfixOpWithInvalidTypes),
+        }
     }
 
     fn eval_infix_float_expr(
@@ -217,7 +190,7 @@ impl Evaluator {
         left: f64,
         right: f64,
     ) -> RuntimeResult<Object> {
-        let result = match kind {
+        match kind {
             InfixKind::Plus => Ok(Object::Float(left + right)),
             InfixKind::Minus => Ok(Object::Float(left - right)),
             InfixKind::Multiply => Ok(Object::Float(left * right)),
@@ -229,12 +202,8 @@ impl Evaluator {
             InfixKind::LessThanEqual => Ok(Object::Bool(left <= right)),
             InfixKind::GreaterThan => Ok(Object::Bool(left > right)),
             InfixKind::GreaterThanEqual => Ok(Object::Bool(left >= right)),
-            _ => Err(RuntimeError::Generic(format!(
-                "Tried to apply invalid infix to float: {:?}",
-                kind
-            ))),
-        };
-        result
+            _ => Err(RuntimeError::InfixOpWithInvalidTypes),
+        }
     }
 
     fn eval_infix_string_expr(
@@ -243,13 +212,10 @@ impl Evaluator {
         left: &str,
         right: &str,
     ) -> RuntimeResult<Object> {
-        let result = match kind {
+        match kind {
             InfixKind::Plus => Ok(Object::String(format!("{}{}", left, right))),
-            _ => Err(RuntimeError::Generic(String::from(
-                "Tried to apply invalid infix to string",
-            ))),
-        };
-        result
+            _ => Err(RuntimeError::InfixOpWithInvalidTypes),
+        }
     }
 
     fn eval_infix_bool_expr(
@@ -258,36 +224,26 @@ impl Evaluator {
         lv: bool,
         rv: bool,
     ) -> RuntimeResult<Object> {
-        let result = match kind {
+        match kind {
             InfixKind::Or => Ok(Object::Bool(lv || rv)),
             InfixKind::And => Ok(Object::Bool(lv && rv)),
-            _ => Err(RuntimeError::Generic(String::from(
-                "Tried to apply invalid infix to bool",
-            ))),
-        };
-        result
+            _ => Err(RuntimeError::InfixOpWithInvalidTypes),
+        }
     }
 
     fn eval_prefix_expr(&mut self, kind: PrefixKind, right: &Object) -> RuntimeResult<Object> {
-        let result = match right {
+        match right {
             Object::Bool(v) => match kind {
                 PrefixKind::Not => Ok(Object::Bool(!*v)),
-                _ => Err(RuntimeError::Generic(String::from(
-                    "Tried to apply invalid prefix to bool",
-                ))),
+                _ => Err(RuntimeError::PrefixOpWithInvalidType),
             },
             Object::Float(v) => match kind {
                 PrefixKind::Plus => Ok(Object::Float(*v)),
                 PrefixKind::Minus => Ok(Object::Float(-*v)),
-                _ => Err(RuntimeError::Generic(String::from(
-                    "Tried to apply invalid prefix to float",
-                ))),
+                _ => Err(RuntimeError::PrefixOpWithInvalidType),
             },
-            _ => Err(RuntimeError::Generic(String::from(
-                "Tried to apply prefix to invalid type",
-            ))),
-        };
-        result
+            _ => Err(RuntimeError::PrefixOpWithInvalidType),
+        }
     }
 
     fn eval_index_expr(&mut self, index_expr: &IndexExpression) -> RuntimeResult<Object> {
@@ -309,14 +265,14 @@ impl Evaluator {
         }
         .clone();
 
-        let mut call_object_args = self
+        let call_object_args = self
             .eval_arguments(&call_expr.arguments, &proc_params)?
             .clone();
 
         let out_values = self.eval_procedure(&proc, &call_object_args)?;
 
         let call_expr_args = call_expr.arguments.clone();
-        let mut params_args = proc_params.iter().zip(call_expr_args.iter());
+        let params_args = proc_params.iter().zip(call_expr_args.iter());
 
         let mut i: usize = 0;
         for param_arg in params_args {
@@ -326,11 +282,7 @@ impl Evaluator {
                         let out_value = out_values[i].clone();
                         self.env.set(ident_expr.value.clone(), out_value)
                     }
-                    _ => {
-                        return Err(RuntimeError::Generic(String::from(
-                            "Tried to set value to an «out» parameter that is not an identifier",
-                        )))
-                    }
+                    _ => return Err(RuntimeError::OutParamNoIdent),
                 }
                 i += 1;
             }
@@ -348,7 +300,7 @@ impl Evaluator {
         match proc {
             Procedure::UserDefined(user_proc) => {
                 // bind the arguments to parameters' name
-                let mut params_args = user_proc.parameters.iter().zip(args.iter());
+                let params_args = user_proc.parameters.iter().zip(args.iter());
                 for param_arg in params_args {
                     let param_ident_string = param_arg.0.ident.value.clone();
                     let arg_value = param_arg.1.clone();
@@ -386,7 +338,7 @@ impl Evaluator {
     ) -> RuntimeResult<Vec<Object>> {
         let mut obj_args: Vec<Object> = vec![];
 
-        let mut args_params = args.iter().zip(params);
+        let args_params = args.iter().zip(params);
 
         for arg_param in args_params {
             if arg_param.1.is_in {
@@ -398,11 +350,7 @@ impl Evaluator {
                         self.env.set(ident_expr.value.clone(), Object::None);
                         obj_args.push(Object::None);
                     }
-                    _ => {
-                        return Err(RuntimeError::Generic(String::from(
-                            "Expected identifier in «out» argument",
-                        )))
-                    }
+                    _ => return Err(RuntimeError::OutParamNoIdent),
                 }
             }
         }
@@ -416,11 +364,7 @@ impl Evaluator {
             let index = match index_obj {
                 // convert index object to integer
                 Object::Float(index_f64) => index_f64 as u64,
-                _ => {
-                    return Err(RuntimeError::Generic(String::from(
-                        "Tried to convert non-integer index to string",
-                    )))
-                }
+                _ => return Err(RuntimeError::IndexNotANumber),
             };
             index_str = format!("{},{}", index_str, index);
         }

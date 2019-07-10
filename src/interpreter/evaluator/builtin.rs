@@ -1,4 +1,3 @@
-use crate::interpreter::analysis::ast::Expression::Ident;
 use crate::interpreter::analysis::ast::Parameter;
 use crate::interpreter::evaluator::errors::{RuntimeError, RuntimeResult};
 use crate::interpreter::evaluator::object::Object;
