@@ -46,6 +46,7 @@ pub enum InfixKind {
     Multiply,
     Divide,
     Power,
+    Modulo,
     Equal,
     NotEqual,
     GreaterThan,

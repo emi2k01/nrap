@@ -252,6 +252,7 @@ impl Parser {
                 | Kind::Minus
                 | Kind::Asterisk
                 | Kind::Slash
+                | Kind::Modulo
                 | Kind::Caret
                 | Kind::Equal
                 | Kind::NotEqual
@@ -297,6 +298,7 @@ impl Parser {
             Kind::Asterisk => InfixKind::Multiply,
             Kind::Slash => InfixKind::Divide,
             Kind::Caret => InfixKind::Power,
+            Kind::Modulo => InfixKind::Modulo,
             Kind::Equal => InfixKind::Equal,
             Kind::NotEqual => InfixKind::NotEqual,
             Kind::GreaterThan => InfixKind::GreaterThan,
@@ -394,7 +396,7 @@ impl Parser {
                 Precedence::LessGreater
             }
             Kind::Plus | Kind::Minus => Precedence::Sum,
-            Kind::Slash | Kind::Asterisk => Precedence::Product,
+            Kind::Slash | Kind::Asterisk | Kind::Modulo => Precedence::Product,
             Kind::LParen => Precedence::Call,
             Kind::Caret => Precedence::Power,
             Kind::LBracket => Precedence::Index,

@@ -196,6 +196,7 @@ impl Evaluator {
             InfixKind::Multiply => Ok(Object::Float(left * right)),
             InfixKind::Divide => Ok(Object::Float(left / right)),
             InfixKind::Power => Ok(Object::Float(left.powf(right))),
+            InfixKind::Modulo => Ok(Object::Float(left % right)),
             InfixKind::Equal => Ok(Object::Bool((left - right).abs() <= std::f64::EPSILON)),
             InfixKind::NotEqual => Ok(Object::Bool((left - right).abs() > std::f64::EPSILON)),
             InfixKind::LessThan => Ok(Object::Bool(left < right)),
