@@ -185,11 +185,11 @@ impl Parser {
         expect_current_token!(self, LParen)?;
 
         let mut params: Vec<Parameter> = vec![];
-        
+
         if current_token_is!(self, RParen) {
             return Ok(params);
         }
-        
+
         loop {
             let param = self.parse_parameter()?;
             params.push(param);
@@ -388,6 +388,7 @@ impl Parser {
 
     fn token_precedence(token: &Kind) -> Precedence {
         match token {
+            Kind::Or | Kind::And => Precedence::LogicalOp,
             Kind::Equal | Kind::NotEqual => Precedence::Equals,
             Kind::LessThan | Kind::LessThanEqual | Kind::GreaterThan | Kind::GreaterThanEqual => {
                 Precedence::LessGreater
@@ -527,7 +528,7 @@ mod tests {
         ];
         assert_eq!(result, expected_result);
     }
-    
+
     #[test]
     fn test_empty_parameters() {
         let mut parser = Parser::new(Lexer::new("()"));

@@ -39,7 +39,7 @@ pub struct CallExpression {
     pub arguments: Vec<Expression>,
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum InfixKind {
     Plus,
     Minus,
@@ -63,7 +63,7 @@ pub struct InfixExpression {
     pub right: Box<Expression>,
 }
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Debug, Clone, Copy)]
 pub enum PrefixKind {
     Plus,
     Minus,
@@ -81,6 +81,16 @@ pub struct Parameter {
     pub ident: IdentExpression,
     pub is_in: bool,
     pub is_out: bool,
+}
+
+impl Parameter {
+    pub fn new(name: String, is_in: bool, is_out: bool) -> Self {
+        Self {
+            ident: IdentExpression { value: name },
+            is_in,
+            is_out,
+        }
+    }
 }
 
 #[derive(PartialEq, Debug, Clone)]
@@ -120,9 +130,10 @@ pub struct LoopStatement {
     pub block: BlockStatement,
 }
 
-#[derive(PartialEq, PartialOrd, Debug, Clone)]
+#[derive(PartialEq, PartialOrd, Debug, Clone, Copy)]
 pub enum Precedence {
     Lowest,
+    LogicalOp,
     Equals,
     LessGreater,
     Sum,
