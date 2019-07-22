@@ -27,7 +27,12 @@ impl Lexer {
     }
 
     pub fn next_token(&mut self) -> Option<Token> {
-        self.skip_whitespace();
+        loop {
+            if self.skip_whitespace() || self.skip_comment() {
+                continue;
+            }
+            break;
+        }
 
         let current_char = match self.current_char {
             Some(v) => v,
@@ -237,13 +242,16 @@ impl Lexer {
         Kind::StringLiteral(string)
     }
 
-    fn skip_whitespace(&mut self) {
+    fn skip_whitespace(&mut self) -> bool {
+        let mut got_whitespace = false;
         while let Some(current_char) = self.current_char {
             match current_char {
                 ' ' | '\t' => {
+                    got_whitespace = true;
                     self.read_char();
                 }
                 '\n' => {
+                    got_whitespace = true;
                     self.read_char();
                     self.line += 1;
                     self.column = 1;
@@ -251,6 +259,29 @@ impl Lexer {
                 _ => break,
             }
         }
+        got_whitespace
+    }
+
+    fn skip_comment(&mut self) -> bool {
+        let mut got_comment = false;
+        while let Some(current_char) = self.current_char {
+            match current_char {
+                '/' => {
+                    if self.peek_char() == Some('/') {
+                        got_comment = true;
+                        self.read_char();
+                        loop {
+                            if self.current_char == Some('\n') {
+                                break;
+                            }
+                            self.read_char();
+                        }
+                    }
+                }
+                _ => break,
+            }
+        }
+        got_comment
     }
 
     fn read_char(&mut self) {
