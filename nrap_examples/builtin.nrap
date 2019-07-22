@@ -1,0 +1,25 @@
+procedure main() {
+    output("
+NRap includes two builtin functions (as of July 22, 2019):
+
+input(prompt, value) -> This functions prints «prompt» and asks the
+user for a value that will be stored in «value». If «value» is a
+number, it is automatically converted to a number type.
+
+output(output, print_newline) -> Prints «output» and prints a
+new line if «print_newline» is true.
+    ", true);
+
+    input("
+Did you get it?
+(1) = yes 
+(2) = no
+Answer: ", 
+    x);
+
+    if x = 1 {
+        output("Good.", true);
+    } else {
+        output("Sorry.", true);
+    }
+}

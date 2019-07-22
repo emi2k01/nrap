@@ -1,0 +1,16 @@
+procedure main() {
+    input("Insert n for fib(n): ", n);
+    fib(n, result);
+    output("Result: ", false);
+    output(result, true);
+}
+
+procedure fib(n, out result) {
+    if n < 2 {
+        result = n;
+    } else {
+        fib(n-1, result1);
+        fib(n-2, result2);
+        result = result1 + result2;
+    }
+}

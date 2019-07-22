@@ -1,0 +1,9 @@
+procedure main() {
+    input("Count from 0 to ", n);
+    x = 1;
+    loop {
+        output(x, true);
+        break if x = n;
+        x = x+1;
+    }
+}

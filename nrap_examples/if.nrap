@@ -1,0 +1,8 @@
+procedure main() {
+    input("Age: ", age);
+    if age >= 18 {
+        output("You're an adult", true);
+    } else {
+        output("You're underage", true);
+    }
+}

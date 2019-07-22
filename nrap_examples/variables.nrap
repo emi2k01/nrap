@@ -1,0 +1,7 @@
+procedure main() {
+    x = 10;
+    y = x;
+    if x = y {
+        output("nice", true);
+    }
+}

@@ -1,0 +1,63 @@
+procedure main() {
+    // «in» parameters are normal parameters. They accept an expression and
+    // it gets passed by value
+
+    procedure_with_in(5);
+
+    // since the «in» parameter behaviour is the default in most languages
+    // it can be omitted
+
+    procedure_without_in(5),
+
+    // the «out» parameter accepts an identifier as argument. They work as return values.
+
+    // the procedure called assigns a value to the «out» parameter and the value
+    // is then binded to the argument identifier.
+
+    // I'm bad at explaining so here's an example:
+
+    // "result" is declared here and is initialized with the
+    // value the procedure assigned to its correspondent parameter.
+    result = 10;
+    // even though "result" is already initialized, "sum" receives a «None» value instead of 10.
+    sum(10, 10, result);
+    output(result, true); // 20
+
+    // «out» parameters have 1-way binding. The procedure doesn't
+    // know if the identifier passed is a variable identifier.
+
+    // the «in» attribute can be used along with the «out» attribute to have 2-way
+    // binding. Together, they allow you to pass a variable to the procedure
+    // and reuse the same identifier to hold an «out» value
+
+    // here the procedure receives the value 10, and uses the "x" identifier
+    // to store the result of 10 multiplied by 10
+    x = 10;
+    multiply_by_ten(x);
+    output(x, true); // 100
+
+}
+
+procedure procedure_with_in(in x) {
+    output("procedure_with_in(in x): ", true);
+    x = x + 10;
+    output("x = ", false);
+    output(x, true);
+}
+
+procedure procedure_without_in(x) {
+    output("procedure_without_in(in x): ", true);
+    x = x + 10;
+    output("x = ", false);
+    output(x, true);
+}
+
+procedure sum(x, y, out result) {
+    output("sum(x, y, out result): ", true);
+    result = x+y;
+}
+
+procedure multiply_by_ten(in out x) {
+    output("multiply_by_ten(in out x): ", true);
+    x = x * 10;
+}
