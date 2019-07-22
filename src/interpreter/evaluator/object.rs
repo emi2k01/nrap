@@ -14,7 +14,7 @@ impl fmt::Display for Object {
             Object::String(string) => write!(f, "{}", string),
             Object::Float(float) => write!(f, "{}", float),
             Object::Bool(boolean) => write!(f, "{}", boolean),
-            Object::None => writeln!(f, "None"),
+            Object::None => write!(f, "None"),
         }
     }
 }
