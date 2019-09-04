@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::rc::Rc;
 
 use crate::interpreter::evaluator::errors::{RuntimeError, RuntimeResult};
 use crate::interpreter::evaluator::object::Object;
@@ -6,7 +7,7 @@ use crate::interpreter::evaluator::procedure::Procedure;
 
 pub struct Environment {
     stores: Vec<Vec<HashMap<String, Object>>>,
-    procedures: HashMap<String, Procedure>,
+    procedures: HashMap<String, Rc<Procedure>>,
 }
 
 impl Environment {
@@ -45,14 +46,14 @@ impl Environment {
                 "Tried to add a procedure that already exists",
             )))
         } else {
-            self.procedures.insert(key, proc);
+            self.procedures.insert(key, Rc::new(proc));
             Ok(())
         }
     }
 
-    pub fn get_procedure(&self, key: &str) -> RuntimeResult<&Procedure> {
+    pub fn get_procedure(&self, key: &str) -> RuntimeResult<Rc<Procedure>> {
         if let Some(proc) = self.procedures.get(key) {
-            Ok(&proc)
+            Ok(Rc::clone(proc))
         } else {
             Err(RuntimeError::Generic(String::from(
                 "Tried to get a procedure that doesn't exist",

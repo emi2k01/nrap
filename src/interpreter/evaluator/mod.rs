@@ -259,10 +259,10 @@ impl Evaluator {
 
     fn eval_call_expr(&mut self, call_expr: &CallExpression) -> RuntimeResult<Option<Object>> {
         let proc_ident_str = &call_expr.procedure_ident.value;
-        let proc = self.env.get_procedure(&proc_ident_str)?.clone();
-        let proc_params = match &proc {
-            Procedure::UserDefined(user_proc) => &user_proc.parameters,
-            Procedure::Builtin(builtin_proc) => &builtin_proc.parameters,
+        let proc = self.env.get_procedure(&proc_ident_str)?;
+        let proc_params = match *proc {
+            Procedure::UserDefined(ref user_proc) => &user_proc.parameters,
+            Procedure::Builtin(ref builtin_proc) => &builtin_proc.parameters,
         }
         .clone();
 
