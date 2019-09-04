@@ -263,16 +263,13 @@ impl Evaluator {
         let proc_params = match *proc {
             Procedure::UserDefined(ref user_proc) => &user_proc.parameters,
             Procedure::Builtin(ref builtin_proc) => &builtin_proc.parameters,
-        }
-        .clone();
+        };
 
-        let call_object_args = self
-            .eval_arguments(&call_expr.arguments, &proc_params)?
-            .clone();
+        let call_object_args = self.eval_arguments(&call_expr.arguments, &proc_params)?;
 
-        let out_values = self.eval_procedure(&proc, &call_object_args)?;
+        let mut out_values = self.eval_procedure(&proc, &call_object_args)?;
 
-        let call_expr_args = call_expr.arguments.clone();
+        let call_expr_args = &call_expr.arguments;
         let params_args = proc_params.iter().zip(call_expr_args.iter());
 
         let mut i: usize = 0;
@@ -280,7 +277,7 @@ impl Evaluator {
             if param_arg.0.is_out {
                 match param_arg.1 {
                     Expression::Ident(ident_expr) => {
-                        let out_value = out_values[i].clone();
+                        let out_value = out_values.remove(i);
                         self.env.set(ident_expr.value.clone(), out_value)
                     }
                     _ => return Err(RuntimeError::OutParamNoIdent),
@@ -289,7 +286,7 @@ impl Evaluator {
             }
         }
         if out_values.len() == 1 {
-            Ok(Some(out_values[0].clone()))
+            Ok(Some(out_values.remove(0)))
         } else {
             Ok(None)
         }
