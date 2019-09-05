@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::io::{stdin, stdout, Write};
 use std::rc::Rc;
 
-pub fn new_builtin_procedures() -> HashMap<&'static str, Rc<Procedure>> {
+pub fn new_builtin_procedures() -> HashMap<&'static str, Procedure> {
     let mut procs = HashMap::new();
 
     let output_proc = BuiltinProcedure {
@@ -25,8 +25,8 @@ pub fn new_builtin_procedures() -> HashMap<&'static str, Rc<Procedure>> {
         proc_fn: Rc::new(builtin_input),
     };
 
-    procs.insert("output", Rc::new(Procedure::Builtin(output_proc)));
-    procs.insert("input", Rc::new(Procedure::Builtin(input_proc)));
+    procs.insert("output", Procedure::Builtin(output_proc));
+    procs.insert("input", Procedure::Builtin(input_proc));
     procs
 }
 

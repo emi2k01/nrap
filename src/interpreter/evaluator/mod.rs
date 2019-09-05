@@ -12,19 +12,18 @@ use environment::{EnvIdent, Environment};
 
 use std::collections::HashMap;
 use std::io::Write;
-use std::rc::Rc;
 
 pub struct Evaluator<'a> {
     env: Environment<'a>,
     program: &'a Program,
-    procedures: &'a HashMap<&'a str, Rc<Procedure>>,
+    procedures: &'a HashMap<&'a str, Procedure>,
 }
 
 impl<'a> Evaluator<'a> {
     pub fn get_procedures(
         program: &'a Program,
         include_builtin: bool,
-    ) -> RuntimeResult<HashMap<&'a str, Rc<Procedure>>> {
+    ) -> RuntimeResult<HashMap<&'a str, Procedure>> {
         let mut procedures = HashMap::new();
         if include_builtin {
             procedures.extend(builtin::new_builtin_procedures());
@@ -33,7 +32,7 @@ impl<'a> Evaluator<'a> {
             match statement {
                 Statement::Procedure(proc) => procedures.insert(
                     &*proc.ident.value,
-                    Rc::new(Procedure::UserDefined(proc.clone())),
+                    Procedure::UserDefined(proc.clone()),
                 ),
                 _ => return Err(RuntimeError::NonProcedureInTopLevel),
             };
@@ -44,7 +43,7 @@ impl<'a> Evaluator<'a> {
     pub fn new(
         env: Environment<'a>,
         program: &'a Program,
-        procedures: &'a HashMap<&'a str, Rc<Procedure>>,
+        procedures: &'a HashMap<&'a str, Procedure>,
     ) -> RuntimeResult<Self> {
         Ok(Self {
             env,
@@ -282,7 +281,7 @@ impl<'a> Evaluator<'a> {
     fn eval_call_expr(&mut self, call_expr: &'a CallExpression) -> RuntimeResult<Option<Object>> {
         let proc_ident_str = &call_expr.procedure_ident.value;
         let proc = self.procedures.get::<str>(&proc_ident_str).unwrap();
-        let proc_params = match **proc {
+        let proc_params = match proc {
             Procedure::UserDefined(ref user_proc) => &user_proc.parameters,
             Procedure::Builtin(ref builtin_proc) => &builtin_proc.parameters,
         };
