@@ -13,7 +13,7 @@ fn main() {
         .parse()
         .unwrap();
     let procedures = Evaluator::get_procedures(&program_ast, true).unwrap();
-    Evaluator::new(Environment::new_builtin(), &program_ast, &procedures)
+    Evaluator::new(Environment::new(), &program_ast, &procedures)
         .unwrap()
         .eval()
         .unwrap();

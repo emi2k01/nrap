@@ -96,7 +96,7 @@ impl<'a> Evaluator<'a> {
         &mut self,
         assignment: &'a AssignmentStatement,
     ) -> RuntimeResult<()> {
-        let mut ident_str = &assignment.ident.value;
+        let ident_str = &assignment.ident.value;
         let value = self.eval_expr(&assignment.value)?;
         // TODO: Oh god, do it in another way
         if let Some(indices) = &assignment.index {

@@ -1,9 +1,7 @@
 use std::collections::HashMap;
-use std::rc::Rc;
 
 use crate::interpreter::evaluator::errors::{RuntimeError, RuntimeResult};
 use crate::interpreter::evaluator::object::Object;
-use crate::interpreter::evaluator::procedure::Procedure;
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum EnvIdent<'a> {
@@ -13,21 +11,13 @@ pub enum EnvIdent<'a> {
 
 pub struct Environment<'a> {
     stores: Vec<Vec<HashMap<EnvIdent<'a>, Object>>>,
-    procedures: HashMap<&'a str, Rc<Procedure>>,
 }
 
 impl<'a> Environment<'a> {
     pub fn new() -> Self {
         Self {
             stores: vec![vec![HashMap::new()]],
-            procedures: HashMap::new(),
         }
-    }
-
-    pub fn new_builtin() -> Self {
-        let mut env = Self::new();
-        env.procedures = super::builtin::new_builtin_procedures();
-        env
     }
 
     pub fn enter_scope(&mut self) {
@@ -44,27 +34,6 @@ impl<'a> Environment<'a> {
 
     pub fn exit_call_stack(&mut self) {
         self.stores.pop();
-    }
-
-    pub fn add_procedure(&mut self, key: &'a str, proc: Procedure) -> RuntimeResult<()> {
-        if self.procedures.contains_key(&key) {
-            Err(RuntimeError::Generic(String::from(
-                "Tried to add a procedure that already exists",
-            )))
-        } else {
-            self.procedures.insert(key, Rc::new(proc));
-            Ok(())
-        }
-    }
-
-    pub fn get_procedure(&self, key: &str) -> RuntimeResult<Rc<Procedure>> {
-        if let Some(proc) = self.procedures.get(key) {
-            Ok(Rc::clone(proc))
-        } else {
-            Err(RuntimeError::Generic(String::from(
-                "Tried to get a procedure that doesn't exist",
-            )))
-        }
     }
 
     pub fn set(&mut self, key: EnvIdent<'a>, obj: Object) {
