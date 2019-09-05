@@ -8,21 +8,53 @@ use crate::interpreter::analysis::ast::*;
 use crate::interpreter::evaluator::errors::{RuntimeError, RuntimeResult};
 use crate::interpreter::evaluator::object::Object;
 use crate::interpreter::evaluator::procedure::Procedure;
-use environment::Environment;
-use std::io::Write;
+use environment::{EnvIdent, Environment};
 
-pub struct Evaluator {
-    env: Environment,
+use std::collections::HashMap;
+use std::io::Write;
+use std::rc::Rc;
+
+pub struct Evaluator<'a> {
+    env: Environment<'a>,
+    program: &'a Program,
+    procedures: &'a HashMap<&'a str, Rc<Procedure>>,
 }
 
-impl Evaluator {
-    pub fn new(env: Environment) -> Self {
-        Self { env }
+impl<'a> Evaluator<'a> {
+    pub fn get_procedures(
+        program: &'a Program,
+        include_builtin: bool,
+    ) -> RuntimeResult<HashMap<&'a str, Rc<Procedure>>> {
+        let mut procedures = HashMap::new();
+        if include_builtin {
+            procedures.extend(builtin::new_builtin_procedures());
+        }
+        for statement in program {
+            match statement {
+                Statement::Procedure(proc) => procedures.insert(
+                    &*proc.ident.value,
+                    Rc::new(Procedure::UserDefined(proc.clone())),
+                ),
+                _ => return Err(RuntimeError::NonProcedureInTopLevel),
+            };
+        }
+        Ok(procedures)
     }
 
-    pub fn eval(&mut self, program: Program) -> RuntimeResult<()> {
-        self.setup_env(&program)?;
-        for statement in program {
+    pub fn new(
+        env: Environment<'a>,
+        program: &'a Program,
+        procedures: &'a HashMap<&'a str, Rc<Procedure>>,
+    ) -> RuntimeResult<Self> {
+        Ok(Self {
+            env,
+            program,
+            procedures,
+        })
+    }
+
+    pub fn eval(&mut self) -> RuntimeResult<()> {
+        for statement in self.program {
             if let Statement::Procedure(proc) = statement {
                 if proc.ident.value == "main" {
                     let result = self.eval_block_statement(&proc.block);
@@ -38,20 +70,7 @@ impl Evaluator {
         Ok(())
     }
 
-    fn setup_env(&mut self, program: &[Statement]) -> RuntimeResult<()> {
-        for statement in program {
-            match statement {
-                Statement::Procedure(proc) => self.env.add_procedure(
-                    proc.ident.value.clone(),
-                    Procedure::UserDefined(proc.clone()),
-                ),
-                _ => Err(RuntimeError::NonProcedureInTopLevel),
-            }?;
-        }
-        Ok(())
-    }
-
-    fn eval_block_statement(&mut self, block: &[Statement]) -> RuntimeResult<()> {
+    fn eval_block_statement(&mut self, block: &'a [Statement]) -> RuntimeResult<()> {
         self.env.enter_scope();
         for statement in block {
             self.eval_statement(statement)?;
@@ -60,7 +79,7 @@ impl Evaluator {
         Ok(())
     }
 
-    fn eval_statement(&mut self, statement: &Statement) -> RuntimeResult<()> {
+    fn eval_statement(&mut self, statement: &'a Statement) -> RuntimeResult<()> {
         match statement {
             Statement::Assignment(assignment) => self.eval_assignment_statement(&assignment)?,
             Statement::If(if_statement) => self.eval_if_statement(&if_statement)?,
@@ -73,20 +92,24 @@ impl Evaluator {
         Ok(())
     }
 
-    fn eval_assignment_statement(&mut self, assignment: &AssignmentStatement) -> RuntimeResult<()> {
-        let mut ident_str = assignment.ident.value.clone();
+    fn eval_assignment_statement(
+        &mut self,
+        assignment: &'a AssignmentStatement,
+    ) -> RuntimeResult<()> {
+        let mut ident_str = &assignment.ident.value;
         let value = self.eval_expr(&assignment.value)?;
         // TODO: Oh god, do it in another way
         if let Some(indices) = &assignment.index {
             let index = self.indices_to_string(&indices)?;
-
-            ident_str = format!("%{}{}", ident_str, index);
+            let ident_str = format!("%{}{}", ident_str, index);
+            self.env.set(EnvIdent::Owned(ident_str), value);
+        } else {
+            self.env.set(EnvIdent::Borrowed(ident_str), value);
         }
-        self.env.set(ident_str.clone(), value);
         Ok(())
     }
 
-    fn eval_if_statement(&mut self, if_statement: &IfStatement) -> RuntimeResult<()> {
+    fn eval_if_statement(&mut self, if_statement: &'a IfStatement) -> RuntimeResult<()> {
         let cond_expr = self.eval_expr(&if_statement.condition)?;
         match cond_expr {
             Object::Bool(boolean) => {
@@ -95,14 +118,13 @@ impl Evaluator {
                 } else if let Some(alternative) = &if_statement.alternative {
                     self.eval_block_statement(alternative)?;
                 }
-                
             }
             _ => return Err(RuntimeError::IfConditionNotABool),
         }
         Ok(())
     }
 
-    fn eval_loop_statement(&mut self, loop_statement: &LoopStatement) -> RuntimeResult<()> {
+    fn eval_loop_statement(&mut self, loop_statement: &'a LoopStatement) -> RuntimeResult<()> {
         self.env.enter_scope();
         let block = &loop_statement.block;
         'loop_statement: loop {
@@ -127,14 +149,14 @@ impl Evaluator {
         Ok(())
     }
 
-    fn eval_expression_statement(&mut self, expr: &ExpressionStatement) -> RuntimeResult<()> {
+    fn eval_expression_statement(&mut self, expr: &'a ExpressionStatement) -> RuntimeResult<()> {
         match expr {
             ExpressionStatement::Call(call_expr) => self.eval_call_expr(call_expr)?,
         };
         Ok(())
     }
 
-    fn eval_expr(&mut self, expr: &Expression) -> RuntimeResult<Object> {
+    fn eval_expr(&mut self, expr: &'a Expression) -> RuntimeResult<Object> {
         match expr {
             Expression::Ident(ident_expr) => self.eval_ident_expr(ident_expr),
             Expression::FloatLiteral(lit) => Ok(Object::Float(*lit)),
@@ -247,20 +269,20 @@ impl Evaluator {
         }
     }
 
-    fn eval_index_expr(&mut self, index_expr: &IndexExpression) -> RuntimeResult<Object> {
+    fn eval_index_expr(&mut self, index_expr: &'a IndexExpression) -> RuntimeResult<Object> {
         let ident_string = &index_expr.ident.value;
         let indices = &index_expr.indices;
 
         let indices_string = self.indices_to_string(&indices)?;
 
         let ident_string = format!("%{}{}", ident_string, indices_string);
-        self.env.get(&ident_string)
+        self.env.get(&EnvIdent::Owned(ident_string))
     }
 
-    fn eval_call_expr(&mut self, call_expr: &CallExpression) -> RuntimeResult<Option<Object>> {
+    fn eval_call_expr(&mut self, call_expr: &'a CallExpression) -> RuntimeResult<Option<Object>> {
         let proc_ident_str = &call_expr.procedure_ident.value;
-        let proc = self.env.get_procedure(&proc_ident_str)?;
-        let proc_params = match *proc {
+        let proc = self.procedures.get::<str>(&proc_ident_str).unwrap();
+        let proc_params = match **proc {
             Procedure::UserDefined(ref user_proc) => &user_proc.parameters,
             Procedure::Builtin(ref builtin_proc) => &builtin_proc.parameters,
         };
@@ -278,7 +300,8 @@ impl Evaluator {
                 match param_arg.1 {
                     Expression::Ident(ident_expr) => {
                         let out_value = out_values.remove(i);
-                        self.env.set(ident_expr.value.clone(), out_value)
+                        self.env
+                            .set(EnvIdent::Borrowed(&ident_expr.value), out_value)
                     }
                     _ => return Err(RuntimeError::OutParamNoIdent),
                 }
@@ -292,7 +315,11 @@ impl Evaluator {
         }
     }
 
-    fn eval_procedure(&mut self, proc: &Procedure, args: &[Object]) -> RuntimeResult<Vec<Object>> {
+    fn eval_procedure(
+        &mut self,
+        proc: &'a Procedure,
+        args: &[Object],
+    ) -> RuntimeResult<Vec<Object>> {
         self.env.enter_call_stack();
         let mut out_values: Vec<Object> = vec![];
         match proc {
@@ -300,9 +327,10 @@ impl Evaluator {
                 // bind the arguments to parameters' name
                 let params_args = user_proc.parameters.iter().zip(args.iter());
                 for param_arg in params_args {
-                    let param_ident_string = param_arg.0.ident.value.clone();
+                    let param_ident_string = &param_arg.0.ident.value;
                     let arg_value = param_arg.1.clone();
-                    self.env.set(param_ident_string, arg_value);
+                    self.env
+                        .set(EnvIdent::Borrowed(param_ident_string), arg_value);
                 }
 
                 // execute the procedure
@@ -313,7 +341,7 @@ impl Evaluator {
                 // return the values of parameters with the «out» attribute
                 for param in &user_proc.parameters {
                     if param.is_out {
-                        out_values.push(self.env.get(&param.ident.value)?);
+                        out_values.push(self.env.get(&EnvIdent::Borrowed(&param.ident.value))?);
                     }
                 }
             }
@@ -325,13 +353,13 @@ impl Evaluator {
         Ok(out_values)
     }
 
-    fn eval_ident_expr(&mut self, ident_expr: &IdentExpression) -> RuntimeResult<Object> {
-        self.env.get(&ident_expr.value)
+    fn eval_ident_expr(&mut self, ident_expr: &'a IdentExpression) -> RuntimeResult<Object> {
+        self.env.get(&EnvIdent::Borrowed(&ident_expr.value))
     }
 
     fn eval_arguments(
         &mut self,
-        args: &[Expression],
+        args: &'a [Expression],
         params: &[Parameter],
     ) -> RuntimeResult<Vec<Object>> {
         let mut obj_args: Vec<Object> = vec![];
@@ -345,7 +373,8 @@ impl Evaluator {
             } else if arg_param.1.is_out {
                 match arg_param.0 {
                     Expression::Ident(ident_expr) => {
-                        self.env.set(ident_expr.value.clone(), Object::None);
+                        self.env
+                            .set(EnvIdent::Borrowed(&ident_expr.value), Object::None);
                         obj_args.push(Object::None);
                     }
                     _ => return Err(RuntimeError::OutParamNoIdent),
@@ -355,7 +384,7 @@ impl Evaluator {
         Ok(obj_args)
     }
 
-    fn indices_to_string(&mut self, indices: &[Expression]) -> RuntimeResult<String> {
+    fn indices_to_string(&mut self, indices: &'a [Expression]) -> RuntimeResult<String> {
         let mut index_str = String::new();
         for index_expr in indices {
             let index_obj = self.eval_expr(&index_expr)?; // get index object

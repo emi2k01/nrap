@@ -12,7 +12,9 @@ fn main() {
     let program_ast = Parser::new(Lexer::new(program_content.as_str()))
         .parse()
         .unwrap();
-    Evaluator::new(Environment::new_builtin())
-        .eval(program_ast)
+    let procedures = Evaluator::get_procedures(&program_ast, true).unwrap();
+    Evaluator::new(Environment::new_builtin(), &program_ast, &procedures)
+        .unwrap()
+        .eval()
         .unwrap();
 }

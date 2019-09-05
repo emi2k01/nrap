@@ -5,12 +5,18 @@ use crate::interpreter::evaluator::errors::{RuntimeError, RuntimeResult};
 use crate::interpreter::evaluator::object::Object;
 use crate::interpreter::evaluator::procedure::Procedure;
 
-pub struct Environment {
-    stores: Vec<Vec<HashMap<String, Object>>>,
-    procedures: HashMap<String, Rc<Procedure>>,
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum EnvIdent<'a> {
+    Borrowed(&'a str),
+    Owned(String),
 }
 
-impl Environment {
+pub struct Environment<'a> {
+    stores: Vec<Vec<HashMap<EnvIdent<'a>, Object>>>,
+    procedures: HashMap<&'a str, Rc<Procedure>>,
+}
+
+impl<'a> Environment<'a> {
     pub fn new() -> Self {
         Self {
             stores: vec![vec![HashMap::new()]],
@@ -40,7 +46,7 @@ impl Environment {
         self.stores.pop();
     }
 
-    pub fn add_procedure(&mut self, key: String, proc: Procedure) -> RuntimeResult<()> {
+    pub fn add_procedure(&mut self, key: &'a str, proc: Procedure) -> RuntimeResult<()> {
         if self.procedures.contains_key(&key) {
             Err(RuntimeError::Generic(String::from(
                 "Tried to add a procedure that already exists",
@@ -61,7 +67,7 @@ impl Environment {
         }
     }
 
-    pub fn set(&mut self, key: String, obj: Object) {
+    pub fn set(&mut self, key: EnvIdent<'a>, obj: Object) {
         let rev_scopes = self.stores.last_mut().unwrap().iter_mut().rev();
         for scope in rev_scopes {
             if scope.get(&key).is_some() {
@@ -72,7 +78,7 @@ impl Environment {
         self.current_scope().insert(key, obj);
     }
 
-    pub fn get(&mut self, obj: &str) -> RuntimeResult<Object> {
+    pub fn get(&mut self, obj: &EnvIdent<'a>) -> RuntimeResult<Object> {
         let rev_scopes = self.stores.last().unwrap().iter().rev();
         for scope in rev_scopes {
             if let Some(v) = scope.get(obj) {
@@ -84,7 +90,7 @@ impl Environment {
         )))
     }
 
-    fn current_scope(&mut self) -> &mut HashMap<String, Object> {
+    fn current_scope(&mut self) -> &mut HashMap<EnvIdent<'a>, Object> {
         self.stores.last_mut().unwrap().last_mut().unwrap()
     }
 }
