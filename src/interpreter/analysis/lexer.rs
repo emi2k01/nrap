@@ -250,7 +250,7 @@ impl Lexer {
                     got_whitespace = true;
                     self.read_char();
                 }
-                '\n' => {
+                '\n' | '\r' => {
                     got_whitespace = true;
                     self.read_char();
                     self.line += 1;
