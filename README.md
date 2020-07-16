@@ -1,21 +1,56 @@
-# NRap toy language
+# NRap language
 
 NRap was created to be used as a 1-to-1 representation of Raptor Flowchart Interpreter programs.
 
-NRap is the format used for files saved by a flowchart interpreter. 
+## Overview
 
-## Why?
-Raptor Flowchart was used at my university but had a hard time working with it because it's officialy only supported on windows.
-I decided to create my own cross-platform flowchart interpreter and NRap was the first step. Having a text representation of the flowchart allows you to edit the program without having to use a GUI.
+```
+procedure main() {
+    x = "Hello, world"
 
-NRap is still in early development.
+    // The second parameter indicates if a newline should be printed
+    output(x, true)
+
+    y = 1+2
+
+    if y > 0 {
+        // my_x_negated is created automatically if it's an «out» argument
+        neg(x, my_x_negated)
+
+        output(my_x_negated, true)
+    }
+
+    // Store input in variable «n»
+    input("Insert n for fib(n): ", n);
+    fib(n, result);
+    output("Result: ", false);
+    output(result, true);
+}
+
+// «out» parameters are used as return values
+procedure neg(x, out neg_x) {
+    neg_x = -x
+}
+
+procedure fib(n, out result) {
+    if n < 2 {
+        result = n;
+    } else {
+        fib(n-1, result1);
+        fib(n-2, result2);
+        result = result1 + result2;
+    }
+}
+```
 
 ## Building
 debug: `cargo build`
 release: `cargo build --release`
 
+The resulting binary is in `nrap/target/[debug | release]`
+
 ## Usage
-`./nrap FILE.nrap`
+`./nrap $FILE.nrap`
 
 ## Run examples
 `cargo run --release ./nrap_examples/fib.nrap`
