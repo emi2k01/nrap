@@ -276,6 +276,8 @@ impl Lexer {
                             }
                             self.read_char();
                         }
+                    } else {
+                        return false
                     }
                 }
                 _ => break,

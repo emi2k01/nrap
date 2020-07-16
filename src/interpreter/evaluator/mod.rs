@@ -406,16 +406,14 @@ mod tests {
 
     #[test]
     fn test_simple() {
-        Evaluator::new(Environment::new_builtin())
-            .eval(
+        let program_ast = 
                 Parser::new(Lexer::new(
                     r#"
                     procedure main() {
-                        input("fibonacci n: ", n);
-                        fibonacci(n, result);
+                        fibonacci(3, result);
                         output(result, true);
                     }
-                    
+
                     procedure fibonacci(n, out result) {
                         if n = 0 || n = 1 {
                             result = n;
@@ -428,8 +426,11 @@ mod tests {
                     "#,
                 ))
                 .parse()
-                .expect("panicked at parser"),
-            )
+                .expect("panicked at parser");
+        let procedures = Evaluator::get_procedures(&program_ast, true).unwrap();
+        Evaluator::new(Environment::new(), &program_ast, &procedures)
+            .expect("could not create evaluator")
+            .eval()
             .expect("panicked at evaluator");
     }
 }
