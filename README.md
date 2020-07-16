@@ -45,12 +45,13 @@ procedure fib(n, out result) {
 
 ## Building
 debug: `cargo build`
+
 release: `cargo build --release`
 
 The resulting binary is in `nrap/target/[debug | release]`
 
 ## Usage
-`./nrap $FILE.nrap`
+`./nrap <file>`
 
 ## Run examples
 `cargo run --release ./nrap_examples/fib.nrap`
