@@ -40,9 +40,14 @@
     <div id="container">
       <div id="inputBoxContainer">
       <textarea id="inputBox" spellcheck="false">funcion principal() {
-    fib(12, resultado);
-    imprimir("Resultado: ", falso);
-    imprimir(resultado, verdadero);
+    fib(12, resultadoFib);
+    fact(15, resultadoFact);
+
+    imprimir("Resultado fib(12): ", falso);
+    imprimir(resultadoFib, verdadero);
+
+    imprimir("Resultado 15!: ", falso);
+    imprimir(resultadoFact, verdadero);
 }
 
 funcion fib(n, salida resultado) {
@@ -52,6 +57,15 @@ funcion fib(n, salida resultado) {
         fib(n-1, resultado1);
         fib(n-2, resultado2);
         resultado = resultado1 + resultado2;
+    }
+}
+
+funcion fact(n, salida resultado) {
+    resultado = 1;
+    ciclo {
+        resultado = resultado * n;
+        n = n - 1;
+        romper si n = 2;
     }
 }
       </textarea>
