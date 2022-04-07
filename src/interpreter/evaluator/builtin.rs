@@ -5,47 +5,68 @@ use crate::interpreter::evaluator::procedure::{BuiltinProcedure, Procedure};
 use std::collections::HashMap;
 use std::io::{stdin, stdout, Write};
 use std::rc::Rc;
+use wasm_bindgen::prelude::*;
 
 pub fn new_builtin_procedures() -> HashMap<&'static str, Procedure> {
     let mut procs = HashMap::new();
 
     let output_proc = BuiltinProcedure {
         parameters: vec![
-            Parameter::new(String::from("output"), true, false),
-            Parameter::new(String::from("break_line"), true, false),
+            Parameter::new(String::from("salida"), true, false),
+            Parameter::new(String::from("salto_linea"), true, false),
         ],
         proc_fn: Rc::new(builtin_output),
     };
 
     let input_proc = BuiltinProcedure {
         parameters: vec![
-            Parameter::new(String::from("prompt"), true, false),
-            Parameter::new(String::from("input"), false, true),
+            Parameter::new(String::from("mensaje"), true, false),
+            Parameter::new(String::from("entrada"), false, true),
         ],
         proc_fn: Rc::new(builtin_input),
     };
 
-    procs.insert("output", Procedure::Builtin(output_proc));
-    procs.insert("input", Procedure::Builtin(input_proc));
+    procs.insert("imprimir", Procedure::Builtin(output_proc));
+    //procs.insert("leer", Procedure::Builtin(input_proc));
     procs
 }
 
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = Out)]
+    fn log(s: &str, newline: bool);
+}
+
 fn builtin_output(args: &[Object]) -> RuntimeResult<Object> {
+    #[cfg(target_arch = "wasm32")]
+    fn print<T: std::fmt::Display>(v: T, newline: bool) {
+        log(&v.to_string(), newline);
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn print<T: Display>(v: &T, newline: bool) {
+        if newline {
+            println!("{}", &v.to_string());
+        } else {
+            print!("{}", &v.to_string());
+        }
+        stdout().flush().unwrap();
+    }
+
     let output = &args[0];
     let break_line = &args[1];
 
     match break_line {
-        Object::Bool(v) if *v => {
-            println!("{}", output);
+        Object::Bool(v) => {
+            print(output, *v);
         }
-        Object::Bool(_) => print!("{}", output),
         _ => {
             return Err(RuntimeError::Generic(String::from(
-                "Expected a bool on output(output, break_line) but got another type",
+                "Expected a bool on imprimir(salida, salto_linea) but got another type",
             )))
         }
     }
-    stdout().flush().unwrap();
 
     Ok(Object::None)
 }

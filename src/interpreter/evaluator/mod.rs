@@ -30,10 +30,9 @@ impl<'a> Evaluator<'a> {
         }
         for statement in program {
             match statement {
-                Statement::Procedure(proc) => procedures.insert(
-                    &*proc.ident.value,
-                    Procedure::UserDefined(proc.clone()),
-                ),
+                Statement::Procedure(proc) => {
+                    procedures.insert(&*proc.ident.value, Procedure::UserDefined(proc.clone()))
+                }
                 _ => return Err(RuntimeError::NonProcedureInTopLevel),
             };
         }
@@ -55,7 +54,7 @@ impl<'a> Evaluator<'a> {
     pub fn eval(&mut self) -> RuntimeResult<()> {
         for statement in self.program {
             if let Statement::Procedure(proc) = statement {
-                if proc.ident.value == "main" {
+                if proc.ident.value == "principal" {
                     let result = self.eval_block_statement(&proc.block);
                     if let Err(err) = result {
                         println!("{}", err);
@@ -406,9 +405,8 @@ mod tests {
 
     #[test]
     fn test_simple() {
-        let program_ast = 
-                Parser::new(Lexer::new(
-                    r#"
+        let program_ast = Parser::new(Lexer::new(
+            r#"
                     procedure main() {
                         fibonacci(3, result);
                         output(result, true);
@@ -424,9 +422,9 @@ mod tests {
                         }
                     }
                     "#,
-                ))
-                .parse()
-                .expect("panicked at parser");
+        ))
+        .parse()
+        .expect("panicked at parser");
         let procedures = Evaluator::get_procedures(&program_ast, true).unwrap();
         Evaluator::new(Environment::new(), &program_ast, &procedures)
             .expect("could not create evaluator")

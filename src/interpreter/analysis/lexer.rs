@@ -161,15 +161,15 @@ impl Lexer {
         }
 
         match word.as_str() {
-            "true" => Kind::BoolLiteral(true),
-            "false" => Kind::BoolLiteral(false),
-            "procedure" => Kind::Procedure,
-            "break" => Kind::Break,
-            "if" => Kind::If,
-            "else" => Kind::Else,
-            "loop" => Kind::Loop,
-            "in" => Kind::In,
-            "out" => Kind::Out,
+            "verdadero" => Kind::BoolLiteral(true),
+            "falso" => Kind::BoolLiteral(false),
+            "funcion" => Kind::Procedure,
+            "romper" => Kind::Break,
+            "si" => Kind::If,
+            "sino" => Kind::Else,
+            "ciclo" => Kind::Loop,
+            "entrada" => Kind::In,
+            "salida" => Kind::Out,
             _ => Kind::Ident(word),
         }
     }
@@ -277,7 +277,7 @@ impl Lexer {
                             self.read_char();
                         }
                     } else {
-                        return false
+                        return false;
                     }
                 }
                 _ => break,
