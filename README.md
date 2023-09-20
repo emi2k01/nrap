@@ -5,40 +5,33 @@ NRap was created to be used as a 1-to-1 representation of Raptor Flowchart Inter
 ## Overview
 
 ```
-procedure main() {
-    x = "Hello, world"
+funcion principal() {
+    fib(12, resultadoFib);
+    fact(15, resultadoFact);
 
-    // The second parameter indicates if a newline should be printed
-    output(x, true)
+    imprimir("Resultado fib(12): ", falso);
+    imprimir(resultadoFib, verdadero);
 
-    y = 1+2
+    imprimir("Resultado 15!: ", falso);
+    imprimir(resultadoFact, verdadero);
+}
 
-    if y > 0 {
-        // my_x_negated is created automatically if it's an «out» argument
-        neg(x, my_x_negated)
-
-        output(my_x_negated, true)
+funcion fib(n, salida resultado) {
+    si n < 2 {
+        resultado = n;
+    } sino {
+        fib(n-1, resultado1);
+        fib(n-2, resultado2);
+        resultado = resultado1 + resultado2;
     }
-
-    // Store input in variable «n»
-    input("Insert n for fib(n): ", n);
-    fib(n, result);
-    output("Result: ", false);
-    output(result, true);
 }
 
-// «out» parameters are used as return values
-procedure neg(x, out neg_x) {
-    neg_x = -x
-}
-
-procedure fib(n, out result) {
-    if n < 2 {
-        result = n;
-    } else {
-        fib(n-1, result1);
-        fib(n-2, result2);
-        result = result1 + result2;
+funcion fact(n, salida resultado) {
+    resultado = 1;
+    ciclo {
+        resultado = resultado * n;
+        n = n - 1;
+        romper si n = 2;
     }
 }
 ```
